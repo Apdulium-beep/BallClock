@@ -1,0 +1,10 @@
+This package uses dynamically linked Qt 6.11.2 libraries.
+Qt is copyright The Qt Company Ltd. and other contributors.
+Qt Core, Gui, Widgets, Network and Svg are available under LGPLv3,
+GPL and commercial license options. See the accompanying license texts.
+Users can replace the compatible shared Qt libraries in qt_app.
+The application sources and build instructions are in source and build.cmd.
+Qt source code, including module license texts and third-party notices:
+https://download.qt.io/archive/qt/6.11/6.11.2/submodules/
+https://code.qt.io/cgit/qt/
+https://www.qt.io/licensing/open-source-lgpl-obligations

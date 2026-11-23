@@ -1,0 +1,283 @@
+openapi: 3.0.3
+info:
+  title: BallClock Local Control API
+  version: 1.0.0
+  description: >-
+    USB remains available. HTTP is intended for a trusted private LAN only;
+    no TLS or user authentication is provided. Client IDs coordinate streams,
+    not authorization. Do not expose this service directly to the internet.
+servers:
+  - url: http://ballclock.local
+components:
+  parameters:
+    Client:
+      in: header
+      name: X-BallClock-Client
+      required: true
+      description: Unique controller ID, NOT an authentication secret.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+        pattern: '^[A-Za-z0-9_-]+$'
+  schemas:
+    GradientPreset:
+      type: string
+      maxLength: 92
+      description: 'Empty clears a slot; otherwise UTF-8 name (1..64 bytes, no controls, pipe or leading/trailing ASCII spaces) followed by | and four comma-separated six-digit RGB colors.'
+      example: 'Northern lights|123456,38c3ff,91e0c2,ffffff'
+    Result:
+      type: object
+      properties:
+        ok: {type: boolean}
+        saved: {type: boolean}
+        displayed: {type: boolean}
+        error: {type: string}
+    Settings:
+      type: object
+      additionalProperties: false
+      properties:
+        font: {type: integer, minimum: 0, maximum: 2}
+        color: {type: string, pattern: '^[a-fA-F0-9]{6}$'}
+        lead: {type: integer, enum: [0, 1]}
+        blink: {type: integer, enum: [0, 1]}
+        bmode: {type: integer, minimum: 0, maximum: 4, description: '0 off, 1 gradient, 2 noise, 3 solid, 4 drawing'}
+        drawSlot: {type: integer, minimum: 0, maximum: 7}
+        drawDigits: {type: integer, enum: [0, 1], description: 'Draw configured clock font over picture; 0 hides digits only in drawing mode'}
+        bcolor: {type: string, pattern: '^[a-fA-F0-9]{6}$', description: 'Independent solid background RGB'}
+        pal: {type: integer, minimum: 0, maximum: 16, description: '0..8 built-ins, 9..16 select grad0..grad7'}
+        grad0: {$ref: '#/components/schemas/GradientPreset'}
+        grad1: {$ref: '#/components/schemas/GradientPreset'}
+        grad2: {$ref: '#/components/schemas/GradientPreset'}
+        grad3: {$ref: '#/components/schemas/GradientPreset'}
+        grad4: {$ref: '#/components/schemas/GradientPreset'}
+        grad5: {$ref: '#/components/schemas/GradientPreset'}
+        grad6: {$ref: '#/components/schemas/GradientPreset'}
+        grad7: {$ref: '#/components/schemas/GradientPreset'}
+        bbright: {type: integer, minimum: 0, maximum: 255}
+        speed: {type: integer, minimum: 0, maximum: 100}
+        scale: {type: integer, minimum: 0, maximum: 100}
+        angle: {type: integer, minimum: -180, maximum: 180}
+        autoB: {type: integer, enum: [0, 1]}
+        bright: {type: integer, minimum: 0, maximum: 255}
+        bmin: {type: integer, minimum: 0, maximum: 255}
+        bmax: {type: integer, minimum: 0, maximum: 255}
+        adcMin: {type: integer, minimum: 0, maximum: 1023}
+        adcMax: {type: integer, minimum: 0, maximum: 1023}
+        night: {type: integer, enum: [0, 1]}
+        ncolor: {type: string, pattern: '^[a-fA-F0-9]{6}$'}
+        nthr: {type: integer, minimum: 0, maximum: 1023}
+        gmt: {type: integer, minimum: -720, maximum: 840}
+        ntp: {type: string, maxLength: 39}
+        showIp: {type: integer, enum: [0, 1]}
+        apOnly: {type: integer, enum: [0, 1], default: 1, description: '1: direct BallClock AP; 0: router plus persistent BallClock AP. Apply via /wifi/connect or reboot.'}
+        ssid: {type: string, maxLength: 32}
+        pass: {type: string, maxLength: 64, writeOnly: true}
+  responses:
+    Result:
+      description: Result; persistence is confirmed only by saved=true.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Result'}
+    Error:
+      description: Invalid request, cross-origin write, active other controller or storage error.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Result'}
+paths:
+  /api/v1/info:
+    get:
+      responses:
+        '200':
+          description: device=ballclock, api_version=1, protocol=3, led_count=128, frame_format=rgb8-hex, lease_ms=1500.
+  /api/v1/state:
+    get:
+      responses:
+        '200':
+          description: Current settings and telemetry; never contains the Wi-Fi password.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device: {type: string, enum: [ballclock]}
+                  api_version: {type: integer, enum: [1]}
+                  protocol: {type: integer}
+                  s: {$ref: '#/components/schemas/Settings'}
+                  art:
+                    type: object
+                    properties:
+                      names: {type: array, minItems: 8, maxItems: 8, items: {type: string}}
+                      data: {type: string, minLength: 3712, maxLength: 3712, description: 'Selected picture; included only while bmode=4'}
+                  t:
+                    type: object
+                    properties:
+                      time: {type: string}
+                      synced: {type: integer}
+                      adc: {type: integer}
+                      brightness: {type: integer}
+                      night: {type: integer}
+                      remote: {type: integer}
+                      ip: {type: string}
+                      wifi: {type: integer, enum: [0, 1, 2]}
+                      ap: {type: integer}
+                      hasPass: {type: integer}
+                      saved: {type: integer, enum: [0, 1], description: '1 when there are no pending settings writes.'}
+                      wifiMode: {type: integer, description: 'ESP8266 radio mode: 0 off, 1 station, 2 AP, 3 AP+station.'}
+                      channel: {type: integer}
+                      apClients: {type: integer, description: 'Number of stations associated with the clock AP.'}
+                      uptimeMs: {type: integer, format: int64}
+                      freeHeap: {type: integer}
+                      apStarts: {type: integer, description: 'AP start/recovery attempts since boot.'}
+  /api/v1/settings:
+    post:
+      parameters:
+        - {$ref: '#/components/parameters/Client'}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/Settings'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/frame:
+    get:
+      description: Read-only preview of the actual displayed RGB after brightness/current limiting. Does not acquire or renew a controller lease.
+      responses:
+        '200':
+          description: Last displayed frame, ordered LED 0..127.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [device, api_version, led_count, rgb]
+                properties:
+                  device: {type: string, enum: [ballclock]}
+                  api_version: {type: integer, enum: [1]}
+                  led_count: {type: integer, enum: [128]}
+                  rgb: {type: string, minLength: 768, maxLength: 768, pattern: '^[a-fA-F0-9]+$'}
+    post:
+      parameters:
+        - {$ref: '#/components/parameters/Client'}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [rgb]
+              properties:
+                rgb: {type: string, minLength: 768, maxLength: 768, pattern: '^[a-fA-F0-9]+$'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/save:
+    post:
+      parameters:
+        - {$ref: '#/components/parameters/Client'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+        '500': {$ref: '#/components/responses/Error'}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/stop:
+    post:
+      parameters:
+        - {$ref: '#/components/parameters/Client'}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+        '500': {$ref: '#/components/responses/Error'}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/time:
+    post:
+      parameters:
+        - {$ref: '#/components/parameters/Client'}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [epoch, tz]
+              properties:
+                epoch: {type: integer, format: int64, minimum: 1600000001, maximum: 4294967295}
+                tz: {type: integer, minimum: -720, maximum: 840}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/wifi/connect:
+    post:
+      parameters:
+        - {$ref: '#/components/parameters/Client'}
+      description: Applies apOnly mode. Direct AP uses 192.168.4.1 without router credentials. Router mode uses stored SSID/password; the IP may change.
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '500': {$ref: '#/components/responses/Error'}
+  /api/v1/art:
+    get:
+      parameters:
+        - {name: slot, in: query, required: true, schema: {type: integer, minimum: 0, maximum: 7}}
+      responses:
+        '200':
+          description: Saved picture, or blank pixels for an empty slot.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slot: {type: integer}
+                  name: {type: string}
+                  data: {type: string, minLength: 3712, maxLength: 3712}
+        '400': {$ref: '#/components/responses/Error'}
+    post:
+      parameters:
+        - {$ref: '#/components/parameters/Client'}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [slot, name, data]
+              properties:
+                slot: {type: integer, minimum: 0, maximum: 7}
+                name: {type: string, description: 'Valid UTF-8, 1..64 bytes; same name restrictions as named gradients'}
+                data: {type: string, minLength: 3712, maxLength: 3712}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '500': {$ref: '#/components/responses/Error'}
+  /api/v1/art/delete:
+    post:
+      parameters:
+        - {$ref: '#/components/parameters/Client'}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [slot]
+              properties:
+                slot: {type: integer, minimum: 0, maximum: 7}
+      responses:
+        '200': {$ref: '#/components/responses/Result'}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '500': {$ref: '#/components/responses/Error'}

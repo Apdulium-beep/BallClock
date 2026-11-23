@@ -1,0 +1,10 @@
+font=0 bmode=0 hash=c9d4902f67f18383
+font=0 bmode=1 hash=3d9fb9d39efa9c53
+font=0 bmode=2 hash=06f5e152e5a266b3
+font=1 bmode=0 hash=fb29fa0d8d6f6343
+font=1 bmode=1 hash=9b4026491d37f51b
+font=1 bmode=2 hash=6756d8d27e48481b
+font=2 bmode=0 hash=9cc6b38b49dce403
+font=2 bmode=1 hash=0b03c3fd7917d6a3
+font=2 bmode=2 hash=e52bc7925cff661b
+кадров: 129600  общий хеш: a7c7b617b7c79c74

@@ -1,0 +1,65 @@
+set font=1 -> 1
+set font=99 -> 1
+set font=-4 -> 1
+set color=ff8800 -> 1
+set color=GGGGGG -> 1
+set lead=1 -> 1
+set blink=0 -> 1
+set bmode=2 -> 1
+set pal=8 -> 1
+set pal=40 -> 1
+set bbright=300 -> 1
+set speed=77 -> 1
+set scale=-5 -> 1
+set angle=-90 -> 1
+set angle=999 -> 1
+set autoB=1 -> 1
+set bright=10 -> 1
+set bmin=3 -> 1
+set bmax=250 -> 1
+set adcMin=5 -> 1
+set adcMax=5000 -> 1
+set night=1 -> 1
+set ncolor=00ff00 -> 1
+set nthr=123 -> 1
+set gmt=120 -> 1
+set gmt=-9999 -> 1
+set ntp=time."x".org -> 1
+set showIp=0 -> 1
+set ssid=My "Home" \ WiFi -> 1
+set pass=p=ss w0rd -> 1
+set nope=1 -> 0
+set ver=2 -> 1
+JSON: {"font":0,"color":"000000","lead":1,"blink":0,"bmode":2,"pal":8,"bbright":255,"speed":77,"scale":0,"angle":180,"autoB":1,"bright":10,"bmin":3,"bmax":250,"adcMin":5,"adcMax":1023,"night":1,"ncolor":"00ff00","nthr":123,"gmt":-720,"ntp":"time.\"x\".org","showIp":0,"ssid":"My \"Home\" \\ WiFi"}
+FILE:
+ver=2
+font=0
+color=000000
+lead=1
+blink=0
+bmode=2
+pal=8
+bbright=255
+speed=77
+scale=0
+angle=180
+autoB=1
+bright=10
+bmin=3
+bmax=250
+adcMin=5
+adcMax=1023
+night=1
+ncolor=00ff00
+nthr=123
+gmt=-720
+ntp=time."x".org
+showIp=0
+ssid=My "Home" \ WiFi
+pass=p=ss w0rd
+RELOAD JSON: {"font":0,"color":"000000","lead":1,"blink":0,"bmode":2,"pal":8,"bbright":255,"speed":77,"scale":0,"angle":180,"autoB":1,"bright":10,"bmin":3,"bmax":250,"adcMin":5,"adcMax":1023,"night":1,"ncolor":"00ff00","nthr":123,"gmt":-720,"ntp":"time.\"x\".org","showIp":0,"ssid":"My \"Home\" \\ WiFi"}
+MIGRATE old -> font=2
+MIGRATE old -> font=1
+MIGRATE old -> font=1
+MIGRATE old -> font=0
+MIGRATE v2 -> font=2

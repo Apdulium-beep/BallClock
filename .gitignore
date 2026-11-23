@@ -1,0 +1,31 @@
+# Private device backups, signing keys and local diagnostics
+/backups/
+/logs/
+/publish/
+**/android-signing/
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.key
+*signing-password*
+.env
+.env.*
+before-*.bin
+
+# Rebuildable output; keep the small checked-in Windows test launchers
+/build/*
+!/build/*.cmd
+**/.pio/
+**/__pycache__/
+*.pyc
+*.pdb
+*.obj
+*.ilk
+*.log
+/android/*.apk
+/android/*.idsig
+*.user
+.vs/
+.idea/
+.DS_Store

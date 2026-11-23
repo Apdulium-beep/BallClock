@@ -1,0 +1,74 @@
+[
+  {
+    "version": "1.0",
+    "versionCode": 1,
+    "file": "BallClock-1.0.apk",
+    "bytes": 21035,
+    "sha256": "5f9fdbc79ce91bb4d1db5336b34fbd1d969f4c7927b290a3720af896805fdf52",
+    "tag": "android-v1.0"
+  },
+  {
+    "version": "1.1",
+    "versionCode": 2,
+    "file": "BallClock-1.1.apk",
+    "bytes": 29291,
+    "sha256": "18038c41c9fcc4ed5efa6b1887c0a2c3a207fa0486a87b77bf6400187210e7fe",
+    "tag": "android-v1.1"
+  },
+  {
+    "version": "1.2",
+    "versionCode": 3,
+    "file": "BallClock-1.2.apk",
+    "bytes": 33387,
+    "sha256": "dc9ed3980eac3ee544e152e1f6ac5669c7fa7af7224d043bb2cbdde73b1a41f3",
+    "tag": "android-v1.2"
+  },
+  {
+    "version": "1.3",
+    "versionCode": 4,
+    "file": "BallClock-1.3.apk",
+    "bytes": 41579,
+    "sha256": "73508ad5fa22b307e8c9bb7e8e15d3cc8b64075541973ad69482509e319826f5",
+    "tag": "android-v1.3"
+  },
+  {
+    "version": "1.4",
+    "versionCode": 5,
+    "file": "BallClock-1.4.apk",
+    "bytes": 41579,
+    "sha256": "fca5ea290b66b530b0d284b335af8830fb1dfb8163f28bf3bc6348e41750aad9",
+    "tag": "android-v1.4"
+  },
+  {
+    "version": "1.5",
+    "versionCode": 6,
+    "file": "BallClock-1.5.apk",
+    "bytes": 41579,
+    "sha256": "86edc413fcfd515c46378d42a59e6409ca32c681915913e73eb8b4628fe075dc",
+    "tag": "android-v1.5"
+  },
+  {
+    "version": "1.6",
+    "versionCode": 7,
+    "file": "BallClock-1.6.apk",
+    "bytes": 45675,
+    "sha256": "bcdb211fc7ad8e374a6166b578acae932740f5df9225edf4705933305590f884",
+    "tag": "android-v1.6"
+  },
+  {
+    "version": "1.7",
+    "versionCode": 8,
+    "file": "BallClock-1.7.apk",
+    "bytes": 49771,
+    "sha256": "6da825ac44cb1060a90a5bc9b0e8584a5e58a110323cdccdee2aac14b55644ea",
+    "tag": "android-v1.7"
+  },
+  {
+    "version": "1.8",
+    "versionCode": 9,
+    "file": "BallClock-1.8.apk",
+    "bytes": 53867,
+    "sha256": "151a67b96486e3def6a5002e5bdc5287acb3e6a587cc782590062d500babc0bc",
+    "tag": "android-v1.8"
+  }
+]

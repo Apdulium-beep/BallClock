@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BallClock</title>
+<style>
+:root{--bg:#f2f1ed;--fg:#1c1c1a;--card:#fff;--mut:#6a6962;--bd:#d9d7cf;--ac:#c2500d}
+@media(prefers-color-scheme:dark){:root{--bg:#141413;--fg:#ecebe5;--card:#1f1f1d;--mut:#9b9a92;--bd:#383730;--ac:#f39a56}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:max(12px,env(safe-area-inset-top)) 12px 28px}
+main{max-width:520px;margin:0 auto}
+h1{font-size:20px;margin:6px 4px 12px}
+section{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:6px 14px 10px;margin-bottom:12px}
+h2{font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:10px 0 4px}
+.r{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;border-top:1px solid var(--bd)}
+.r:first-of-type{border-top:0}
+.r>span{flex:0 0 auto}
+.r b{font-weight:500;color:var(--mut);text-align:right}
+.g{display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end}
+select,input[type=text],input[type=password],input[type=number],button{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;min-width:0}
+input[type=text],input[type=password],input[type=number]{width:55%}
+input[type=range]{flex:1;max-width:210px;accent-color:var(--ac)}
+input[type=color]{width:52px;height:34px;border:1px solid var(--bd);border-radius:8px;background:none;padding:2px}
+input[type=checkbox]{width:44px;height:26px;accent-color:var(--ac)}
+output{min-width:36px;text-align:right;color:var(--mut);font-variant-numeric:tabular-nums}
+button{cursor:pointer;width:100%;margin:6px 0 0;border-color:var(--ac);color:var(--ac);font-weight:600}
+</style></head>
+<body><main><h1>BallClock</h1><p id="saveStatus" role="status">Загрузка…</p>
+<button id="saveSettings" type="button">Сохранить перед отключением</button>
+<p>После отключения телефона настройки и ход времени сохраняются, пока часы включены.</p><div id="app"></div></main>
+<datalist id="nets"></datalist>
+<script>
+const OPT={font:['Нет','Диагональный','Прямой 4×5'],bmode:['Без фона','Градиент','Перлин','Однотонный'],
+pal:['Закат','Океан','Лес','Неон','Радуга','Вечеринка','Лава','Тепло','Облака']};
+const W={ssid:'',pass:''};
+let S={},T={},pend={},timer=0,lastSig='',lastS='',flushing=null,revision=0;
+const $=s=>document.querySelector(s);
+async function post(p,d){const r=await fetch(p,{method:'POST',body:new URLSearchParams(d||{})});const j=await r.json();if(!r.ok||j.ok===false)throw Error(j.error||'HTTP '+r.status);return j}
+function adopt(j){const k=JSON.stringify(j.s);const ch=k!==lastS;lastS=k;S=j.s;T=j.t;return ch}
+function showError(){ $('#saveStatus').textContent='Нет подтверждения сохранения. Подключитесь к часам и повторите сохранение.' }
+function send(k,v){S[k]=v;pend[k]=v;revision++;$('#saveStatus').textContent='Передача изменений…';clearTimeout(timer);timer=setTimeout(()=>flush().catch(showError),150)}
+async function flush(){
+ if(flushing){await flushing;return Object.keys(pend).length?flush():undefined}
+ if(!Object.keys(pend).length)return;
+ const d=pend;pend={};
+ flushing=(async()=>{try{adopt(await post('/api/set',d));Object.assign(S,pend);layout();info()}catch(e){pend={...d,...pend};throw e}})();
+ try{await flushing}finally{flushing=null}
+ if(Object.keys(pend).length)return flush();info();
+}
+async function saveAll(){try{clearTimeout(timer);await flush();const r=revision;const j=await post('/api/save');if(!j.saved)throw Error('save_failed');if(r===revision){T.saved=1;info()}else $('#saveStatus').textContent='Есть новые изменения — сохраните ещё раз.'}catch(e){showError()}}
+async function syncTime(){adopt(await post('/api/settime',{epoch:Math.floor(Date.now()/1000),tz:-new Date().getTimezoneOffset()}));layout();info()}
+$('#saveSettings').onclick=saveAll;
+const wifiTxt=()=>T.ap?'Своя сеть BallClock, '+T.ip:T.wifi==2?'Подключено, '+T.ip:'Подключение…';
+const UI=[
+['Часы',[
+ {k:'font',t:'sel',l:'Шрифт'},
+ {k:'color',t:'col',l:'Цвет'},
+ {k:'blink',t:'sw',l:'Мигание двоеточия',if:s=>s.font>0},
+ {k:'lead',t:'sw',l:'Ведущий ноль',if:s=>s.font>0}]],
+['Фон',[
+ {k:'bmode',t:'sel',l:'Фон'},
+ {k:'bcolor',t:'col',l:'Цвет фона',if:s=>s.bmode==3},
+ {k:'pal',t:'sel',l:'Палитра',if:s=>s.bmode==1||s.bmode==2},
+ {k:'bbright',t:'rng',l:'Яркость',min:0,max:255,if:s=>s.bmode>0},
+ {k:'speed',t:'rng',l:'Скорость',min:0,max:100,if:s=>s.bmode==1||s.bmode==2},
+ {k:'scale',t:'rng',l:'Масштаб',min:0,max:100,if:s=>s.bmode==1||s.bmode==2},
+ {k:'angle',t:'rng',l:'Угол',min:-180,max:180,if:s=>s.bmode==1}]],
+['Яркость',[
+ {k:'autoB',t:'sw',l:'Автояркость'},
+ {t:'info',l:'Сигнал датчика',f:()=>T.adc+' ['+S.adcMin+', '+S.adcMax+']'},
+ {k:'bmin',t:'rng',l:'Мин.',min:0,max:255,if:s=>s.autoB},
+ {k:'bmax',t:'rng',l:'Макс.',min:0,max:255,if:s=>s.autoB},
+ {t:'btn',l:'Запомнить текущий сигнал как мин.',a:()=>post('/api/calib',{w:'min'}).then(j=>{adopt(j);layout();info()}),if:s=>s.autoB},
+ {t:'btn',l:'Запомнить текущий сигнал как макс.',a:()=>post('/api/calib',{w:'max'}).then(j=>{adopt(j);layout();info()}),if:s=>s.autoB},
+ {k:'bright',t:'rng',l:'Яркость',min:0,max:255,if:s=>!s.autoB}]],
+['Ночной режим',[
+ {k:'night',t:'sw',l:'Включён'},
+ {k:'ncolor',t:'col',l:'Цвет',if:s=>s.night},
+ {k:'nthr',t:'rng',l:'Порог',min:0,max:1023,if:s=>s.night}]],
+['Время',[
+ {k:'gmt',t:'num',l:'Часовой пояс, ч',step:.5,get:v=>v/60,set:v=>Math.round(parseFloat(v)*60)},
+ {k:'ntp',t:'txt',l:'NTP сервер'},
+ {t:'info',l:'Время на часах',f:()=>T.time+(T.synced?'':' (не синхронизировано)')},
+ {t:'btn',l:'Установить время с телефона',a:syncTime}]],
+['WiFi',[
+ {k:'showIp',t:'sw',l:'Показывать IP при подключении'},
+ {t:'info',l:'Состояние',f:wifiTxt},
+ {t:'txt',loc:'ssid',l:'Сеть (SSID)',list:'nets'},
+ {t:'pwd',loc:'pass',l:'Пароль'},
+ {t:'btn',l:'Найти сети',a:scan},
+ {t:'btn',l:'Подключить',a:async()=>{adopt(await post('/api/wifi',{ssid:W.ssid,pass:W.pass}));layout();info()}}]]
+];
+function row(it){
+ const r=document.createElement('label');r.className='r';
+ const sp=document.createElement('span');
+ let c;
+ const v=it.loc?W[it.loc]:(it.get?it.get(S[it.k]):S[it.k]);
+ sp.textContent=it.l;
+ switch(it.t){
+ case 'sel':c=document.createElement('select');OPT[it.k].forEach((o,i)=>c.add(new Option(o,i)));c.value=v;c.onchange=()=>send(it.k,+c.value);break;
+ case 'col':c=document.createElement('input');c.type='color';c.value='#'+S[it.k];c.oninput=()=>send(it.k,c.value.slice(1));break;
+ case 'sw':c=document.createElement('input');c.type='checkbox';c.checked=!!S[it.k];c.onchange=()=>send(it.k,c.checked?1:0);break;
+ case 'rng':{const g=document.createElement('div');g.className='g';c=document.createElement('input');c.type='range';c.min=it.min;c.max=it.max;c.value=v;
+  const o=document.createElement('output');o.textContent=v;c.oninput=()=>{o.textContent=c.value;send(it.k,+c.value)};g.append(c,o);r.append(sp,g);return r}
+ case 'txt':case 'pwd':case 'num':c=document.createElement('input');
+  c.type=it.t=='pwd'?'password':it.t=='num'?'number':'text';if(it.step)c.step=it.step;if(it.list)c.setAttribute('list',it.list);
+  c.value=v;c.autocomplete='off';
+  c.onchange=()=>{if(it.loc)W[it.loc]=c.value;else send(it.k,it.set?it.set(c.value):c.value)};break;
+ case 'info':c=document.createElement('b');c.dataset.i=UI.flatMap(g=>g[1]).indexOf(it);break;
+ case 'btn':c=document.createElement('button');c.textContent=it.l;c.type='button';c.onclick=async()=>{try{await it.a()}catch(e){showError()}};return c;
+ }
+ r.append(sp,c);return r;
+}
+function sigOf(){return UI.map(g=>g[1].map(i=>!i.if||i.if(S)?1:0).join('')).join('|')}
+function build(){
+ const app=$('#app');app.innerHTML='';
+ UI.forEach(([title,items])=>{const s=document.createElement('section');s.innerHTML='<h2>'+title+'</h2>';
+  items.forEach(it=>{if(!it.if||it.if(S))s.append(row(it))});app.append(s)});
+ info();
+}
+function layout(force){const s=sigOf();if(force||s!==lastSig){lastSig=s;build()}}
+function info(){const all=UI.flatMap(g=>g[1]);document.querySelectorAll('b[data-i]').forEach(b=>{b.textContent=all[+b.dataset.i].f()});$('#saveStatus').textContent=Object.keys(pend).length||flushing?'Передача изменений…':T.saved?'Настройки сохранены в часах. Можно отключаться.':'Настройки переданы; часы сохраняют их автоматически…'}
+async function poll(){
+ if(flushing||Object.keys(pend).length||['INPUT','SELECT'].includes(document.activeElement.tagName))return;
+ try{const ch=adopt(await (await fetch('/api/state')).json());if(ch)layout(true);else layout();info()}catch(e){}
+}
+async function scan(){
+ const dl=$('#nets');
+ for(let i=0;i<10;i++){
+  const j=await (await fetch('/api/scan')).json();
+  if(j.nets){dl.innerHTML='';j.nets.forEach(n=>{const o=document.createElement('option');o.value=n;dl.append(o)});
+   if(!j.nets.length)alert('Сети не найдены');else alert('Найдено сетей: '+j.nets.length+'. Нажмите на поле «Сеть (SSID)», чтобы выбрать.');return}
+  await new Promise(r=>setTimeout(r,1500));
+ }
+}
+(async()=>{try{adopt(await (await fetch('/api/state')).json());W.ssid=S.ssid;layout(true);if(!T.synced)await syncTime();setInterval(()=>{if(!document.hidden)poll()},5000)}catch(e){showError()}})();
+</script></body></html>
